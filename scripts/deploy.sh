@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# 设置日志文件
-LOG_FILE="/var/log/deploy_$(date +%Y%m%d_%H%M%S).log"
-
 # 记录开始时间
 echo "===============================================" | tee -a $LOG_FILE
 echo "开始部署时间: $(date)" | tee -a $LOG_FILE
@@ -36,4 +33,4 @@ echo "===============================================" | tee -a $LOG_FILE
 echo "部署完成时间: $(date)" | tee -a $LOG_FILE
 echo "===============================================" | tee -a $LOG_FILE
 
-echo "Docker服务已重启完成!" 
+echo "Docker服务已重启完成!"
