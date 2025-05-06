@@ -19,7 +19,7 @@ services:
       - ./data:/data
       - ./logs:/app/logs
     environment:
-      - SQL_DSN=mufy_new_api:nRPPaE6rHaKTixHW@tcp(127.0.0.1:3306)/mufy_new_api  # 使用宿主机IP
+      - SQL_DSN=newapi2:418830073xX_@tcp(127.0.0.1:3306)/newapi2?charset=utf8mb4&parseTime=True&loc=Local
       - TZ=Asia/Shanghai
       - PORT=3020
       - ERROR_LOG_ENABLED=true # 是否启用错误日志记录
