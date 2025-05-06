@@ -20,7 +20,6 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PWD }}
           port: 22
-          script_stop: true
           script: |
             cd /www/wwwroot/chatmindai/go-server/new-api
             bash deploy.sh
