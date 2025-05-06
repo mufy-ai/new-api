@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ssh-env  # 指定使用ssh-env环境变量
     
     steps:
       - name: 检出代码
