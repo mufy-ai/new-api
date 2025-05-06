@@ -21,16 +21,16 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PWD }}
           port: 22
-          script: cd /www/wwwroot/chatmindai/go-server/new-api && bash scripts/deploy.sh
+          script: sudo -i && cd /www/wwwroot/chatmindai/go-server/new-api && bash scripts/deploy.sh
             
       - name: 发送飞书通知
         id: lark_notification
-        uses: foxundermoon/feishu-action@v2
-        with:
-          url: https://open.larksuite.com/open-apis/bot/v2/hook/d52de161-c9fa-443f-a075-c7d233f101e6
-          msg_type: text
-          content: |
-            ✅ 应用已成功部署到服务器！
-            📝 提交信息: ${{ github.event.head_commit.message }}
-            🔄 触发分支: ${{ github.ref_name }}
-            👨‍💻 提交者: ${{ github.actor }} 
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+            -d '{
+              "msg_type": "text",
+              "content": {
+                "text": "✅ 应用已成功部署到服务器！\n📝 提交信息: ${{ github.event.head_commit.message }}\n🔄 触发分支: ${{ github.ref_name }}\n👨‍💻 提交者: ${{ github.actor }}"
+              }
+            }' \
+            https://open.larksuite.com/open-apis/bot/v2/hook/d52de161-c9fa-443f-a075-c7d233f101e6 
