@@ -3,9 +3,12 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
+	"one-api/service"
 	"strconv"
 	"strings"
 
@@ -619,4 +622,141 @@ func BatchSetChannelTag(c *gin.Context) {
 		"data":    len(channelBatch.Ids),
 	})
 	return
+}
+
+func GetLocalIPAddresses(c *gin.Context) {
+	var ipAddresses []string
+
+	// 获取所有网络接口
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": fmt.Sprintf("获取网络接口失败: %s", err.Error()),
+		})
+		return
+	}
+
+	// 遍历所有网络接口
+	for _, iface := range interfaces {
+		// 排除down的接口和loopback接口
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		// 获取接口的地址
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		// 遍历所有地址
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// 只返回IPv4地址，不包括IPv6地址
+			if ip == nil || ip.IsLoopback() || ip.To4() == nil {
+				continue
+			}
+
+			ipAddresses = append(ipAddresses, ip.String())
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    ipAddresses,
+	})
+}
+
+// TestOutboundIP 测试出口IP
+func TestOutboundIP(c *gin.Context) {
+	ipAddress := c.Query("ip")
+	if ipAddress == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "未提供IP地址",
+		})
+		return
+	}
+
+	// 使用指定的出口IP创建HTTP客户端
+	client, err := service.NewOutboundIPHttpClient(ipAddress)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": fmt.Sprintf("创建HTTP客户端失败: %s", err.Error()),
+		})
+		return
+	}
+
+	// 发送请求到能返回源IP的网站
+	// 使用ipinfo.io，它返回更详细的IP信息
+	req, err := http.NewRequest("GET", "https://ipinfo.io/json", nil)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": fmt.Sprintf("创建请求失败: %s", err.Error()),
+		})
+		return
+	}
+
+	// 添加用户代理头部
+	req.Header.Set("User-Agent", "OneAPI/1.0")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": fmt.Sprintf("发送请求失败: %s", err.Error()),
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	// 读取响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": fmt.Sprintf("读取响应失败: %s", err.Error()),
+		})
+		return
+	}
+
+	// 解析JSON响应
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": fmt.Sprintf("解析响应失败: %s", err.Error()),
+		})
+		return
+	}
+
+	// 检查API返回是否有错误
+	if errMsg, hasError := result["error"].(string); hasError {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": fmt.Sprintf("IP查询失败: %s", errMsg),
+		})
+		return
+	}
+
+	// 添加配置的IP到结果中
+	result["configured_ip"] = ipAddress
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    result,
+	})
 }

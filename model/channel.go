@@ -37,6 +37,7 @@ type Channel struct {
 	Tag               *string `json:"tag" gorm:"index"`
 	Setting           *string `json:"setting" gorm:"type:text"`
 	ParamOverride     *string `json:"param_override" gorm:"type:text"`
+	OutboundIP        *string `json:"outbound_ip" gorm:"type:varchar(64);default:''"`
 }
 
 func (channel *Channel) GetModels() []string {

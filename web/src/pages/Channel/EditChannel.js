@@ -86,6 +86,7 @@ const EditChannel = (props) => {
     priority: 0,
     weight: 0,
     tag: '',
+    outbound_ip: '',
   };
   const [batch, setBatch] = useState(false);
   const [autoBan, setAutoBan] = useState(true);
@@ -99,6 +100,91 @@ const EditChannel = (props) => {
   const [customModel, setCustomModel] = useState('');
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
+  const [ipOptions, setIPOptions] = useState([]);
+  const [testingIP, setTestingIP] = useState(false);
+  
+  const fetchLocalIPs = async () => {
+    try {
+      const res = await API.get('/api/channel/local_ips');
+      if (res.data.success) {
+        const ips = res.data.data.map(ip => ({
+          label: ip,
+          value: ip
+        }));
+        setIPOptions([{ label: '不指定出口IP', value: '' }, ...ips]);
+      } else {
+        showError(res.data.message || '获取本地IP地址失败');
+      }
+    } catch (error) {
+      console.error('获取本地IP地址错误:', error);
+      showError('获取本地IP地址失败: ' + (error.message || '未知错误'));
+    }
+  };
+  
+  const testOutboundIP = async () => {
+    if (!inputs.outbound_ip) {
+      showWarning('请先选择一个出口IP');
+      return;
+    }
+    
+    setTestingIP(true);
+    try {
+      const res = await API.get(`/api/channel/test_outbound_ip?ip=${inputs.outbound_ip}`);
+      if (res.data.success) {
+        const ipInfo = res.data.data;
+        const configuredIP = ipInfo.configured_ip;
+        const detectedIP = ipInfo.ip;
+        
+        if (configuredIP === detectedIP) {
+          Modal.success({
+            title: '出口IP测试成功',
+            content: (
+              <div>
+                <p>配置的IP地址与检测到的出口IP地址一致!</p>
+                <p>IP地址: {detectedIP}</p>
+                <p>主机名: {ipInfo.hostname || '未知'}</p>
+                <p>城市: {ipInfo.city || '未知'}</p>
+                <p>地区: {ipInfo.region || '未知'}</p>
+                <p>国家: {ipInfo.country || '未知'}</p>
+                <p>位置: {ipInfo.loc || '未知'}</p>
+                <p>组织: {ipInfo.org || '未知'}</p>
+                <p>邮编: {ipInfo.postal || '未知'}</p>
+                <p>时区: {ipInfo.timezone || '未知'}</p>
+              </div>
+            ),
+          });
+        } else {
+          Modal.warning({
+            title: '出口IP测试结果不匹配',
+            content: (
+              <div>
+                <p>配置的IP地址与检测到的出口IP地址不一致!</p>
+                <p>配置的IP: {configuredIP}</p>
+                <p>检测到的IP: {detectedIP}</p>
+                <p>主机名: {ipInfo.hostname || '未知'}</p>
+                <p>城市: {ipInfo.city || '未知'}</p>
+                <p>地区: {ipInfo.region || '未知'}</p>
+                <p>国家: {ipInfo.country || '未知'}</p>
+                <p>位置: {ipInfo.loc || '未知'}</p>
+                <p>组织: {ipInfo.org || '未知'}</p>
+                <p>邮编: {ipInfo.postal || '未知'}</p>
+                <p>时区: {ipInfo.timezone || '未知'}</p>
+                <p>可能您的网络配置或防火墙规则影响了出口IP的设置</p>
+              </div>
+            ),
+          });
+        }
+      } else {
+        showError(res.data.message || '测试出口IP失败');
+      }
+    } catch (error) {
+      console.error('测试出口IP错误:', error);
+      showError('测试出口IP失败: ' + (error.message || '未知错误'));
+    } finally {
+      setTestingIP(false);
+    }
+  };
+  
   const handleInputChange = (name, value) => {
     if (name === 'base_url' && value.endsWith('/v1')) {
       Modal.confirm({
@@ -290,29 +376,18 @@ const EditChannel = (props) => {
   };
 
   useEffect(() => {
-    let localModelOptions = [...originModelOptions];
-    inputs.models.forEach((model) => {
-      if (!localModelOptions.find((option) => option.label === model)) {
-        localModelOptions.push({
-          label: model,
-          value: model,
-        });
-      }
-    });
-    setModelOptions(localModelOptions);
-  }, [originModelOptions, inputs.models]);
-
-  useEffect(() => {
     fetchModels().then();
     fetchGroups().then();
+    fetchLocalIPs().then();
     if (isEdit) {
-      loadChannel().then(() => { });
+      loadChannel().then();
     } else {
       setInputs(originInputs);
       let localModels = getChannelModels(inputs.type);
       setBasicModels(localModels);
       setInputs((inputs) => ({ ...inputs, models: localModels }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.editingChannel.id]);
 
   const submit = async () => {
@@ -978,6 +1053,35 @@ const EditChannel = (props) => {
             value={inputs.weight}
             autoComplete='new-password'
           />
+          
+          <div style={{ marginTop: 10 }}>
+            <Typography.Text strong>出口IP：</Typography.Text>
+            <Tooltip content="选择此渠道使用的出口IP地址，所有通过该渠道的请求将绑定到指定的IP地址">
+              <IconHelpCircle size="small" style={{ marginLeft: 5, color: 'var(--semi-color-text-2)' }}/>
+            </Tooltip>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Select
+              placeholder="请选择出口IP地址"
+              name="outbound_ip"
+              style={{ flex: 1 }}
+              onChange={(value) => {
+                handleInputChange('outbound_ip', value);
+              }}
+              value={inputs.outbound_ip || ''}
+              optionList={ipOptions}
+              loading={ipOptions.length === 0}
+            />
+            <Button 
+              type="warning" 
+              onClick={testOutboundIP} 
+              loading={testingIP}
+              disabled={!inputs.outbound_ip}
+            >
+              测试
+            </Button>
+          </div>
+          
           <>
             <div style={{ marginTop: 10 }}>
               <Typography.Text strong>{t('渠道额外设置')}：</Typography.Text>

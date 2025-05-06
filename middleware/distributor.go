@@ -213,7 +213,19 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("channel_id", channel.Id)
 	c.Set("channel_name", channel.Name)
 	c.Set("channel_type", channel.Type)
-	c.Set("channel_setting", channel.GetSetting())
+
+	// 获取渠道设置
+	channelSetting := channel.GetSetting()
+
+	// 如果指定了出口IP，则添加到渠道设置中
+	if channel.OutboundIP != nil && *channel.OutboundIP != "" {
+		if channelSetting == nil {
+			channelSetting = make(map[string]interface{})
+		}
+		channelSetting["outbound_ip"] = *channel.OutboundIP
+	}
+
+	c.Set("channel_setting", channelSetting)
 	c.Set("param_override", channel.GetParamOverride())
 	if nil != channel.OpenAIOrganization && "" != *channel.OpenAIOrganization {
 		c.Set("channel_organization", *channel.OpenAIOrganization)

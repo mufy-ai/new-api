@@ -3,14 +3,15 @@ package channel
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	common2 "one-api/common"
 	"one-api/relay/common"
 	"one-api/relay/constant"
 	"one-api/service"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 func SetupApiRequestHeader(info *common.RelayInfo, c *gin.Context, req *http.Header) {
@@ -97,14 +98,24 @@ func DoWssRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http.Response, error) {
 	var client *http.Client
 	var err error
+
+	// 优先检查是否设置了代理
 	if proxyURL, ok := info.ChannelSetting["proxy"]; ok {
 		client, err = service.NewProxyHttpClient(proxyURL.(string))
 		if err != nil {
 			return nil, fmt.Errorf("new proxy http client failed: %w", err)
 		}
+	} else if outboundIP, ok := info.ChannelSetting["outbound_ip"]; ok && outboundIP.(string) != "" {
+		// 如果设置了出口IP，则使用指定的出口IP
+		client, err = service.NewOutboundIPHttpClient(outboundIP.(string))
+		if err != nil {
+			return nil, fmt.Errorf("new outbound IP http client failed: %w", err)
+		}
 	} else {
+		// 否则使用默认客户端
 		client = service.GetHttpClient()
 	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

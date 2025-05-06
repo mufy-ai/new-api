@@ -3,12 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
-	"golang.org/x/net/proxy"
 	"net"
 	"net/http"
 	"net/url"
 	"one-api/common"
 	"time"
+
+	"golang.org/x/net/proxy"
 )
 
 var httpClient *http.Client
@@ -85,4 +86,42 @@ func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 	default:
 		return nil, fmt.Errorf("unsupported proxy scheme: %s", parsedURL.Scheme)
 	}
+}
+
+// NewOutboundIPHttpClient 创建支持指定出口IP的HTTP客户端
+func NewOutboundIPHttpClient(outboundIP string) (*http.Client, error) {
+	if outboundIP == "" {
+		return httpClient, nil
+	}
+
+	// 创建与默认Transport相同配置的Transport
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+			LocalAddr: &net.TCPAddr{
+				IP: net.ParseIP(outboundIP),
+			},
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConnsPerHost:   10,
+	}
+
+	// 创建一个新的HTTP客户端，使用自定义的Transport
+	client := &http.Client{
+		Transport: transport,
+	}
+
+	// 如果有设置超时，则应用超时
+	if common.RelayTimeout > 0 {
+		client.Timeout = time.Duration(common.RelayTimeout) * time.Second
+	}
+
+	return client, nil
 }
