@@ -21,9 +21,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PWD }}
           port: 22
-          script: |
-            cd /www/wwwroot/chatmindai/go-server/new-api
-            bash deploy.sh
+          script: cd /www/wwwroot/chatmindai/go-server/new-api && bash scripts/deploy.sh
             
       - name: 发送飞书通知
         id: lark_notification
