@@ -5,6 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=0
+      no_cache: true
     # image: calciumion/new-api:latest  # 注释掉远程镜像
     container_name: mufy-new-api
     restart: always
