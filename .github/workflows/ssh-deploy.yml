@@ -9,11 +9,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: ssh-env  # 指定使用ssh-env环境变量
-    
+
     steps:
       - name: 检出代码
         uses: actions/checkout@v3
-      
+
       - name: 连接服务器并执行部署
         uses: appleboy/ssh-action@master
         with:
@@ -21,8 +21,8 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PWD }}
           port: 22
-          script: sudo -i && cd /www/wwwroot/chatmindai/go-server/new-api && bash scripts/deploy.sh
-            
+          script: cd /www/wwwroot/chatmindai/go-server/new-api && sudo bash scripts/deploy.sh
+
       - name: 发送飞书通知
         id: lark_notification
         run: |
@@ -33,4 +33,4 @@ jobs:
                 "text": "✅ 应用已成功部署到服务器！\n📝 提交信息: ${{ github.event.head_commit.message }}\n🔄 触发分支: ${{ github.ref_name }}\n👨‍💻 提交者: ${{ github.actor }}"
               }
             }' \
-            https://open.larksuite.com/open-apis/bot/v2/hook/d52de161-c9fa-443f-a075-c7d233f101e6 
+            https://open.larksuite.com/open-apis/bot/v2/hook/d52de161-c9fa-443f-a075-c7d233f101e6
