@@ -1,6 +1,5 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig, transformWithEsbuild } from 'vite';
-import semiWebpackPlugin from '@douyinfe/semi-webpack-plugin';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -20,17 +19,7 @@ export default defineConfig({
         });
       },
     },
-    react(),
-    {
-      name: 'semi-plugin',
-      apply: 'build',
-      configResolved() {
-        // Apply SemiWebpackPlugin during build
-        new semiWebpackPlugin({
-          cssLayer: true
-        });
-      }
-    }
+    react()
   ],
   optimizeDeps: {
     force: true,
@@ -43,6 +32,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      external: ['sse'],
       output: {
         manualChunks: {
           'react-core': ['react', 'react-dom', 'react-router-dom'],
@@ -63,6 +53,9 @@ export default defineConfig({
             'i18next-browser-languagedetector',
           ],
         },
+        globals: {
+          'sse': 'SSE'
+        }
       },
     },
   },
@@ -70,11 +63,11 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3002',
         changeOrigin: true,
       },
       '/pg': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3002',
         changeOrigin: true,
       },
     },

@@ -20,6 +20,22 @@ const GEMINI_VERSION_EXAMPLE = {
   default: 'v1beta',
 };
 
+const GEMINI_REGION_EXAMPLE = {
+  "default": [
+    {"region": "global", "weight": 1},
+    {"region": "europe-central2", "weight": 1},
+    {"region": "asia-northeast1", "weight": 1}
+  ],
+  "gemini-2.5-pro": [
+    {"region": "europe-central2", "weight": 2},
+    {"region": "us-central1", "weight": 1},
+    {"region": "global", "weight": 1}
+  ],
+  "gemini-2.5-flash": [
+    {"region": "europe-central2", "weight": 1}
+  ]
+};
+
 export default function SettingGeminiModel(props) {
   const { t } = useTranslation();
 
@@ -27,12 +43,13 @@ export default function SettingGeminiModel(props) {
   const [inputs, setInputs] = useState({
     'gemini.safety_settings': '',
     'gemini.version_settings': '',
+    'gemini.region_settings': '',
     'gemini.supported_imagine_models': '',
     'gemini.thinking_adapter_enabled': false,
     'gemini.thinking_adapter_budget_tokens_percentage': 0.6,
   });
   const refForm = useRef();
-  const [inputsRow, setInputsRow] = useState(inputs);
+  const [inputsRow, setInputsRow] = useState({});
 
   async function onSubmit() {
     await refForm.current
@@ -73,12 +90,16 @@ export default function SettingGeminiModel(props) {
   }
 
   useEffect(() => {
-    const currentInputs = {};
-    for (let key in props.options) {
-      if (Object.keys(inputs).includes(key)) {
-        currentInputs[key] = props.options[key];
-      }
+    if (!props.options || !refForm.current) {
+      return;
     }
+
+    const currentInputs = {};
+    // 初始化所有表单字段，包括新添加的字段
+    for (let key in inputs) {
+      currentInputs[key] = props.options[key] !== undefined ? props.options[key] : inputs[key];
+    }
+
     setInputs(currentInputs);
     setInputsRow(structuredClone(currentInputs));
     refForm.current.setValues(currentInputs);
@@ -143,6 +164,34 @@ export default function SettingGeminiModel(props) {
                   ]}
                   onChange={(value) =>
                     setInputs({ ...inputs, 'gemini.version_settings': value })
+                  }
+                />
+              </Col>
+            </Row>
+            <Row>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                <Form.TextArea
+                  label={t('Gemini区域设置')}
+                  placeholder={
+                    t('为一个 JSON 文本，例如：') +
+                    '\n' +
+                    JSON.stringify(GEMINI_REGION_EXAMPLE, null, 2)
+                  }
+                  field={'gemini.region_settings'}
+                  extraText={t(
+                    '配置Gemini模型的全局区域和权重分配，weight相同表示等概率选择。仅对Vertex AI渠道中的Gemini模型生效',
+                  )}
+                  autosize={{ minRows: 6, maxRows: 12 }}
+                  trigger='blur'
+                  stopValidateWithError
+                  rules={[
+                    {
+                      validator: (rule, value) => verifyJSON(value),
+                      message: t('不是合法的 JSON 字符串'),
+                    },
+                  ]}
+                  onChange={(value) =>
+                    setInputs({ ...inputs, 'gemini.region_settings': value })
                   }
                 />
               </Col>
