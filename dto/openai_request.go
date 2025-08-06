@@ -63,7 +63,9 @@ type GeneralOpenAIRequest struct {
 	// Ali Qwen Params
 	VlHighResolutionImages json.RawMessage `json:"vl_high_resolution_images,omitempty"`
 	// 用匿名参数接收额外参数，例如ollama的think参数在此接收
-	Extra map[string]json.RawMessage `json:"-"`
+	Extra           map[string]json.RawMessage `json:"-"`
+	ThinkingBudget  *int                       `json:"thinking_budget,omitempty"`
+	IncludeThoughts bool                       `json:"include_thoughts"`
 }
 
 func (r *GeneralOpenAIRequest) ToMap() map[string]any {

@@ -157,7 +157,12 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 	}
 
 	ThinkingAdaptor(&geminiRequest, info)
-
+	if textRequest.ThinkingBudget != nil {
+		geminiRequest.GenerationConfig.ThinkingConfig = &dto.GeminiThinkingConfig{
+			ThinkingBudget:  common.GetPointer(int(*textRequest.ThinkingBudget)),
+			IncludeThoughts: textRequest.IncludeThoughts,
+		}
+	}
 	safetySettings := make([]dto.GeminiChatSafetySettings, 0, len(SafetySettingList))
 	for _, category := range SafetySettingList {
 		safetySettings = append(safetySettings, dto.GeminiChatSafetySettings{
