@@ -294,6 +294,10 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	if _, ok := c.Get("specific_channel_id"); ok {
 		return false
 	}
+	// 检查错误信息中是否包含 "Resource exhausted"
+	if openaiErr.Error() != "" && strings.Contains(strings.ToLower(openaiErr.Error()), "resource exhausted") {
+		return true
+	}
 	if openaiErr.StatusCode == http.StatusTooManyRequests {
 		return true
 	}
@@ -452,6 +456,10 @@ func shouldRetryTaskRelay(c *gin.Context, channelId int, taskErr *dto.TaskError,
 	}
 	if _, ok := c.Get("specific_channel_id"); ok {
 		return false
+	}
+	// 检查错误信息中是否包含 "Resource exhausted"
+	if taskErr.Message != "" && strings.Contains(strings.ToLower(taskErr.Message), "resource exhausted") {
+		return true
 	}
 	if taskErr.StatusCode == http.StatusTooManyRequests {
 		return true
