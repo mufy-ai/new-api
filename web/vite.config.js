@@ -19,8 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 
 import react from '@vitejs/plugin-react';
 import { defineConfig, transformWithEsbuild } from 'vite';
-import pkg from '@douyinfe/vite-plugin-semi';
-const { vitePluginSemi } = pkg;
+// import pkg from '@douyinfe/vite-plugin-semi';
+// const { vitePluginSemi } = pkg;
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -40,10 +40,10 @@ export default defineConfig({
         });
       },
     },
-    react(),
-    vitePluginSemi({
-      cssLayer: true
-    })
+    react()
+    // vitePluginSemi({
+    //   theme: '@douyinfe/semi-theme-default'
+    // })
   ],
   optimizeDeps: {
     force: true,
@@ -82,15 +82,15 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3002',
         changeOrigin: true,
       },
       '/mj': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3002',
         changeOrigin: true,
       },
       '/pg': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3002',
         changeOrigin: true,
       },
     },

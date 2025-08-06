@@ -1,16 +1,25 @@
 package model_setting
 
 import (
+	"math/rand"
 	"one-api/setting/config"
+	"time"
 )
+
+// RegionConfig 定义区域配置
+type RegionConfig struct {
+	Region string  `json:"region"`
+	Weight float64 `json:"weight"`
+}
 
 // GeminiSettings 定义Gemini模型的配置
 type GeminiSettings struct {
-	SafetySettings                        map[string]string `json:"safety_settings"`
-	VersionSettings                       map[string]string `json:"version_settings"`
-	SupportedImagineModels                []string          `json:"supported_imagine_models"`
-	ThinkingAdapterEnabled                bool              `json:"thinking_adapter_enabled"`
-	ThinkingAdapterBudgetTokensPercentage float64           `json:"thinking_adapter_budget_tokens_percentage"`
+	SafetySettings                        map[string]string         `json:"safety_settings"`
+	VersionSettings                       map[string]string         `json:"version_settings"`
+	RegionSettings                        map[string][]RegionConfig `json:"region_settings"`
+	SupportedImagineModels                []string                  `json:"supported_imagine_models"`
+	ThinkingAdapterEnabled                bool                      `json:"thinking_adapter_enabled"`
+	ThinkingAdapterBudgetTokensPercentage float64                   `json:"thinking_adapter_budget_tokens_percentage"`
 }
 
 // 默认配置
@@ -22,6 +31,11 @@ var defaultGeminiSettings = GeminiSettings{
 	VersionSettings: map[string]string{
 		"default":        "v1beta",
 		"gemini-1.0-pro": "v1",
+	},
+	RegionSettings: map[string][]RegionConfig{
+		"default": {
+			{Region: "global", Weight: 1.0},
+		},
 	},
 	SupportedImagineModels: []string{
 		"gemini-2.0-flash-exp-image-generation",
@@ -58,6 +72,48 @@ func GetGeminiVersionSetting(key string) string {
 		return value
 	}
 	return geminiSettings.VersionSettings["default"]
+}
+
+// GetGeminiRegionSetting 获取区域设置
+func GetGeminiRegionSetting(key string) []RegionConfig {
+	if regions, ok := geminiSettings.RegionSettings[key]; ok {
+		return regions
+	}
+	return geminiSettings.RegionSettings["default"]
+}
+
+// SelectGeminiRegionByWeight 基于权重选择区域
+func SelectGeminiRegionByWeight(modelName string) string {
+	regions := GetGeminiRegionSetting(modelName)
+	if len(regions) == 0 {
+		return "global" // 默认区域
+	}
+
+	if len(regions) == 1 {
+		return regions[0].Region
+	}
+
+	// 计算总权重
+	totalWeight := 0.0
+	for _, r := range regions {
+		totalWeight += r.Weight
+	}
+
+	if totalWeight <= 0 {
+		return regions[0].Region // 如果权重为0或负数，返回第一个
+	}
+
+	// 生成随机数选择区域
+	random := rand.New(rand.NewSource(time.Now().UnixNano())).Float64() * totalWeight
+	current := 0.0
+	for _, r := range regions {
+		current += r.Weight
+		if random <= current {
+			return r.Region
+		}
+	}
+
+	return regions[0].Region // 兜底返回第一个
 }
 
 func IsGeminiModelSupportImagine(model string) bool {
