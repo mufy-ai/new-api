@@ -86,7 +86,7 @@ func GetGeminiRegionSetting(key string) []RegionConfig {
 func SelectGeminiRegionByWeight(modelName string) string {
 	regions := GetGeminiRegionSetting(modelName)
 	if len(regions) == 0 {
-		return "global" // 默认区域
+		return ""
 	}
 
 	if len(regions) == 1 {
