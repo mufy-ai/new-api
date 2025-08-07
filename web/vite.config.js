@@ -32,14 +32,13 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['sse'],
       output: {
         manualChunks: {
           'react-core': ['react', 'react-dom', 'react-router-dom'],
           'semi-ui': ['@douyinfe/semi-icons', '@douyinfe/semi-ui'],
           semantic: ['semantic-ui-offline', 'semantic-ui-react'],
           visactor: ['@visactor/react-vchart', '@visactor/vchart'],
-          tools: ['axios', 'history', 'marked'],
+          tools: ['axios', 'history', 'marked', 'sse'],
           'react-components': [
             'react-dropzone',
             'react-fireworks',
@@ -53,9 +52,6 @@ export default defineConfig({
             'i18next-browser-languagedetector',
           ],
         },
-        globals: {
-          'sse': 'SSE'
-        }
       },
     },
   },
