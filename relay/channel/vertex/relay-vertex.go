@@ -7,23 +7,21 @@ import (
 )
 
 func GetModelRegion(other string, localModelName string) string {
-	// 1. 优先检查全局Gemini区域配置（仅对Gemini模型生效）
+
+	// 1. 回退到渠道自带的区域配置（现有逻辑）
+	if common.IsJsonStr(other) {
+		m := common.StrToMap(other)
+		if m[localModelName] != nil {
+			return m[localModelName].(string)
+		}
+	}
+	// 2. 优先检查全局Gemini区域配置（仅对Gemini模型生效）
 	if isGeminiModel(localModelName) {
 		if globalRegion := model_setting.SelectGeminiRegionByWeight(localModelName); globalRegion != "" {
 			return globalRegion
 		}
 	}
-
-	// 2. 回退到渠道自带的区域配置（现有逻辑）
-	if common.IsJsonStr(other) {
-		m := common.StrToMap(other)
-		if m[localModelName] != nil {
-			return m[localModelName].(string)
-		} else {
-			return m["default"].(string)
-		}
-	}
-	return other
+	return "global"
 }
 
 // isGeminiModel 判断是否为Gemini模型
